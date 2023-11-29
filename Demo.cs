@@ -10,13 +10,41 @@ using Microsoft.FeatureManagement.FeatureFilters;
 using Ninject;
 using System.Reflection;
 using Unity;
+using SimpleInjector;
 
 namespace DIContainers
 {
     public static class Demo
     {
-        public static void DemoMEDI()
+        public static void ResolveMultipleImplementationsMEDI()
         {
+            Console.WriteLine("========== Demo: Resolve Multiple Implementations in MEDI ==========");
+
+            var services = new ServiceCollection();
+
+            services.AddTransient<IStrategy, StrategyA>();
+
+            services.AddTransient<IStrategy, StrategyB>();
+
+            services.AddSingleton<IApplication, DemoAppWithMEDI>();
+
+            ServiceProvider serviceProvider = services.BuildServiceProvider();
+
+            IApplication app = serviceProvider.GetRequiredService<IApplication>();
+
+            //
+            // StrategyB will also be initialized.
+            app.RunStrategy("StrategyA");
+
+            //
+            // Although StrategyA is registered as transient, the second call will still use the same instance.
+            app.RunStrategy("StrategyA");
+        }
+
+        public static void InjectPropertyMEDI()
+        {
+            Console.WriteLine("========== Demo: Inject Property in MEDI ==========");
+
             var services = new ServiceCollection();
 
             services.AddSingleton<IMyLogger, MyLogger>();
@@ -31,10 +59,6 @@ namespace DIContainers
                 Logger = sp.GetRequiredService<IMyLogger>()
             });
 
-            services.AddTransient<IStrategy, StrategyA>();
-
-            services.AddTransient<IStrategy, StrategyB>();
-
             services.AddSingleton<IApplication>(sp => new DemoAppWithMEDI(
                 sp.GetRequiredService<IEnumerable<IStrategy>>())
             {
@@ -46,10 +70,6 @@ namespace DIContainers
 
             IApplication app = serviceProvider.GetRequiredService<IApplication>();
 
-            app.RunStrategy("StrategyA");
-
-            app.RunStrategy("StrategyA");
-
             app.A.DoSomething();
 
             app.A.Logger.Info("BaseComponent A of the App with MEDI is doing something.");
@@ -59,8 +79,35 @@ namespace DIContainers
             app.B.Logger.Info("BaseComponent B of the App with MEDI is doing something.");
         }
 
-        public static void DemoAutofac()
+        public static void ResolveMultipleImplementationsAutofac()
         {
+            Console.WriteLine("========== Demo: Resolve Multiple Implementations in MEDI ==========");
+
+            var builder = new ContainerBuilder();
+
+            builder.RegisterType<StrategyA>().Keyed<IStrategy>("StrategyA");
+
+            builder.RegisterType<StrategyB>().Keyed<IStrategy>("StrategyB");
+
+            builder.RegisterType<DemoAppWithAutofac>().As<IApplication>().SingleInstance();
+
+            var container = builder.Build();
+
+            var app = container.Resolve<IApplication>();
+
+            //
+            // StrategyB will not be initialized
+            app.RunStrategy("StrategyA");
+
+            //
+            // A new instance will be initialized since StrategyA is transient.
+            app.RunStrategy("StrategyA");
+        }
+
+        public static void InjectPropertyAutofac()
+        {
+            Console.WriteLine("========== Demo: Inject Property in Autofac ==========");
+
             var builder = new ContainerBuilder();
 
             builder.RegisterType<MyLogger>().As<IMyLogger>().SingleInstance();
@@ -71,10 +118,6 @@ namespace DIContainers
                 .AsSelf()
                 .SingleInstance();
 
-            builder.RegisterType<StrategyA>().Keyed<IStrategy>("StrategyA");
-
-            builder.RegisterType<StrategyB>().Keyed<IStrategy>("StrategyB");
-
             builder.RegisterType<DemoAppWithAutofac>()
                 .PropertiesAutowired()
                 .As<IApplication>()
@@ -83,10 +126,6 @@ namespace DIContainers
             var container = builder.Build();
 
             var app = container.Resolve<IApplication>();
-
-            app.RunStrategy("StrategyA");
-
-            app.RunStrategy("StrategyA");
 
             app.A.DoSomething();
 
@@ -103,7 +142,7 @@ namespace DIContainers
 
             var builder = new ContainerBuilder();
 
-            builder.RegisterInstance(config).As<IConfiguration>().SingleInstance();
+            builder.RegisterInstance(config).SingleInstance();
 
             builder.RegisterType<ConfigurationFeatureDefinitionProvider>().As<IFeatureDefinitionProvider>();
 
@@ -203,57 +242,6 @@ namespace DIContainers
             }
         }
 
-        public static async void UseFeatureManagementWithNinject()
-        {
-            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
-
-            var kernel = new StandardKernel();
-
-            kernel.Bind<IConfiguration>().ToConstant(config).InSingletonScope();
-
-            kernel.Bind<IFeatureDefinitionProvider>().To<ConfigurationFeatureDefinitionProvider>().InSingletonScope();
-
-            kernel.Bind<FeatureManagementOptions>().ToConstant(new FeatureManagementOptions()).InSingletonScope();
-
-            kernel.Bind<ILoggerFactory>().ToConstant(LoggerFactory.Create(builder => builder.AddConsole())).InSingletonScope();
-
-            kernel.Bind<IFeatureManager>().ToMethod(c => new FeatureManager(
-                c.Kernel.Get<IFeatureDefinitionProvider>(),
-                c.Kernel.Get<FeatureManagementOptions>())
-            {
-                FeatureFilters = c.Kernel.Get<IEnumerable<IFeatureFilterMetadata>>(),
-                Logger = c.Kernel.Get<ILoggerFactory>().CreateLogger<FeatureManager>()
-            }).InSingletonScope();
-            
-            kernel.Bind<IOptions<TargetingEvaluationOptions>>().ToConstant(Options.Create(new TargetingEvaluationOptions())).InSingletonScope();
-
-            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
-
-            kernel.Bind<ITargetingContextAccessor>().ToConstant(targetingContextAccessor).InSingletonScope();
-
-            kernel.Bind<IFeatureFilterMetadata>().To<TargetingFilter>().InSingletonScope();
-
-            IFeatureManager featureManager = kernel.Get<IFeatureManager>();
-
-            var users = new List<string>()
-            {
-                "Jeff",
-                "Sam"
-            };
-
-            const string feature = "Beta";
-
-            foreach (var user in users)
-            {
-                targetingContextAccessor.Current = new TargetingContext
-                {
-                    UserId = user
-                };
-
-                Console.WriteLine($"{feature} is {(await featureManager.IsEnabledAsync(feature) ? "enabled" : "disabled")} for {user}.");
-            }
-        }
-
         public static async void UseFeatureManagementWithCastleWindsor()
         {
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -285,6 +273,108 @@ namespace DIContainers
             container.Register(Component.For<IFeatureFilterMetadata>().ImplementedBy<TargetingFilter>().LifestyleSingleton());
 
             IFeatureManager featureManager = container.Resolve<IFeatureManager>();
+
+            var users = new List<string>()
+            {
+                "Jeff",
+                "Sam"
+            };
+
+            const string feature = "Beta";
+
+            foreach (var user in users)
+            {
+                targetingContextAccessor.Current = new TargetingContext
+                {
+                    UserId = user
+                };
+
+                Console.WriteLine($"{feature} is {(await featureManager.IsEnabledAsync(feature) ? "enabled" : "disabled")} for {user}.");
+            }
+        }
+
+        public static async void UseFeatureManagementWithSimpleInjector()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var container = new Container();
+
+            container.RegisterSingleton(typeof(IConfiguration), () => config);
+
+            container.RegisterSingleton<IFeatureDefinitionProvider, ConfigurationFeatureDefinitionProvider>();
+
+            container.RegisterSingleton(typeof(FeatureManagementOptions), () => new FeatureManagementOptions());
+
+            container.RegisterSingleton(typeof(ILoggerFactory), () => LoggerFactory.Create(builder => builder.AddConsole()));
+
+            container.RegisterSingleton(typeof(IFeatureManager), () => new FeatureManager(
+                container.GetInstance<IFeatureDefinitionProvider>(),
+                container.GetInstance<FeatureManagementOptions>())
+            {
+                FeatureFilters = container.GetAllInstances<IFeatureFilterMetadata>(),
+                Logger = container.GetInstance<ILoggerFactory>().CreateLogger<FeatureManager>()
+            });
+
+            container.RegisterSingleton(typeof(IOptions<TargetingEvaluationOptions>), () => Options.Create(new TargetingEvaluationOptions()));
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            container.RegisterSingleton(typeof(ITargetingContextAccessor), () => targetingContextAccessor);
+
+            container.Collection.Append<IFeatureFilterMetadata, TargetingFilter>(Lifestyle.Singleton);
+
+            IFeatureManager featureManager = container.GetInstance<IFeatureManager>();
+
+            var users = new List<string>()
+            {
+                "Jeff",
+                "Sam"
+            };
+
+            const string feature = "Beta";
+
+            foreach (var user in users)
+            {
+                targetingContextAccessor.Current = new TargetingContext
+                {
+                    UserId = user
+                };
+
+                Console.WriteLine($"{feature} is {(await featureManager.IsEnabledAsync(feature) ? "enabled" : "disabled")} for {user}.");
+            }
+        }
+
+        public static async void UseFeatureManagementWithNinject()
+        {
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            var kernel = new StandardKernel();
+
+            kernel.Bind<IConfiguration>().ToConstant(config).InSingletonScope();
+
+            kernel.Bind<IFeatureDefinitionProvider>().To<ConfigurationFeatureDefinitionProvider>().InSingletonScope();
+
+            kernel.Bind<FeatureManagementOptions>().ToConstant(new FeatureManagementOptions()).InSingletonScope();
+
+            kernel.Bind<ILoggerFactory>().ToConstant(LoggerFactory.Create(builder => builder.AddConsole())).InSingletonScope();
+
+            kernel.Bind<IFeatureManager>().ToMethod(c => new FeatureManager(
+                c.Kernel.Get<IFeatureDefinitionProvider>(),
+                c.Kernel.Get<FeatureManagementOptions>())
+            {
+                FeatureFilters = c.Kernel.Get<IEnumerable<IFeatureFilterMetadata>>(),
+                Logger = c.Kernel.Get<ILoggerFactory>().CreateLogger<FeatureManager>()
+            }).InSingletonScope();
+
+            kernel.Bind<IOptions<TargetingEvaluationOptions>>().ToConstant(Options.Create(new TargetingEvaluationOptions())).InSingletonScope();
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            kernel.Bind<ITargetingContextAccessor>().ToConstant(targetingContextAccessor).InSingletonScope();
+
+            kernel.Bind<IFeatureFilterMetadata>().To<TargetingFilter>().InSingletonScope();
+
+            IFeatureManager featureManager = kernel.Get<IFeatureManager>();
 
             var users = new List<string>()
             {
