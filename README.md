@@ -87,7 +87,7 @@ public class ComponentB : BaseComponent
 }
 ```
 
-1. Register/Resolve by Key
+### 1. Register/Resolve by Key
 Let's say we have multiple implementations of an interface and they need to be injected into different targets.
 Before .NET 8.0, there is no way to register/resolve services by key.
 
@@ -95,7 +95,7 @@ Furthermore, there could be a scenario that we don't know which implementation t
 In MEDI, we have to inject all implementations and resolve all of them to find the one to use.
 Some implementations can be time-consuming to initialized and in-frequently to be used. AutoFac provides `IIndexed` which will only initialize the registered implementation while being get by the Key.
 
-2. Properties Autowired
+### 2. Properties Autowired
 In MEDI, the public properties can only be injected through factory method.
 ``` C#
 var services = new ServiceCollection();
