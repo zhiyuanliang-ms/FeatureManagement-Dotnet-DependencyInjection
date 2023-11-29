@@ -16,9 +16,9 @@ namespace DIContainers
 {
     public static class Demo
     {
-        public static void ResolveMultipleImplementationsMEDI()
+        public static void ResolveMultipleImplementationsWithMEDI()
         {
-            Console.WriteLine("========== Demo: Resolve Multiple Implementations in MEDI ==========");
+            Console.WriteLine("========== Demo: Resolve multiple implementations with MEDI ==========");
 
             var services = new ServiceCollection();
 
@@ -41,9 +41,9 @@ namespace DIContainers
             app.RunStrategy("StrategyA");
         }
 
-        public static void InjectPropertyMEDI()
+        public static void InjectPropertyWithMEDI()
         {
-            Console.WriteLine("========== Demo: Inject Property in MEDI ==========");
+            Console.WriteLine("========== Demo: Inject property with MEDI ==========");
 
             var services = new ServiceCollection();
 
@@ -79,9 +79,9 @@ namespace DIContainers
             app.B.Logger.Info("BaseComponent B of the App with MEDI is doing something.");
         }
 
-        public static void ResolveMultipleImplementationsAutofac()
+        public static void ResolveMultipleImplementationsWithAutofac()
         {
-            Console.WriteLine("========== Demo: Resolve Multiple Implementations in MEDI ==========");
+            Console.WriteLine("========== Demo: Resolve multiple implementations with Autofac ==========");
 
             var builder = new ContainerBuilder();
 
@@ -104,9 +104,9 @@ namespace DIContainers
             app.RunStrategy("StrategyA");
         }
 
-        public static void InjectPropertyAutofac()
+        public static void InjectPropertyWithAutofac()
         {
-            Console.WriteLine("========== Demo: Inject Property in Autofac ==========");
+            Console.WriteLine("========== Demo: Inject property with Autofac ==========");
 
             var builder = new ContainerBuilder();
 
@@ -138,6 +138,8 @@ namespace DIContainers
 
         public static async void UseFeatureManagementWithAutofac()
         {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with Autofac ==========");
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var builder = new ContainerBuilder();
@@ -157,16 +159,22 @@ namespace DIContainers
             {
                 FeatureFilters = c.Resolve<IEnumerable<IFeatureFilterMetadata>>(),
                 Logger = c.Resolve<ILoggerFactory>().CreateLogger<FeatureManager>()
-            }).As<IFeatureManager>().SingleInstance();
+            }).As<IFeatureManager>()
+                .SingleInstance();
 
             builder.RegisterInstance(Options.Create(new TargetingEvaluationOptions()))
-                .As<IOptions<TargetingEvaluationOptions>>().SingleInstance();
+                .As<IOptions<TargetingEvaluationOptions>>()
+                .SingleInstance();
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
-            builder.RegisterInstance(targetingContextAccessor).As<ITargetingContextAccessor>().SingleInstance();
+            builder.RegisterInstance(targetingContextAccessor)
+                .As<ITargetingContextAccessor>()
+                .SingleInstance();
 
-            builder.RegisterType<TargetingFilter>().As<IFeatureFilterMetadata>().SingleInstance();
+            builder.RegisterType<TargetingFilter>()
+                .As<IFeatureFilterMetadata>()
+                .SingleInstance();
 
             var container = builder.Build();
 
@@ -193,6 +201,8 @@ namespace DIContainers
 
         public static async void UseFeatureManagementWithUnity()
         {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with Unity ==========");
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var container = new UnityContainer();
@@ -244,17 +254,27 @@ namespace DIContainers
 
         public static async void UseFeatureManagementWithCastleWindsor()
         {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with Castle.Windsor ==========");
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var container = new WindsorContainer();
 
-            container.Register(Component.For<IConfiguration>().Instance(config).LifestyleSingleton());
+            container.Register(Component.For<IConfiguration>()
+                .Instance(config)
+                .LifestyleSingleton());
 
-            container.Register(Component.For<IFeatureDefinitionProvider>().ImplementedBy<ConfigurationFeatureDefinitionProvider>().LifestyleSingleton());
+            container.Register(Component.For<IFeatureDefinitionProvider>()
+                .ImplementedBy<ConfigurationFeatureDefinitionProvider>()
+                .LifestyleSingleton());
 
-            container.Register(Component.For<FeatureManagementOptions>().Instance(new FeatureManagementOptions()).LifestyleSingleton());
+            container.Register(Component.For<FeatureManagementOptions>()
+                .Instance(new FeatureManagementOptions())
+                .LifestyleSingleton());
 
-            container.Register(Component.For<ILoggerFactory>().Instance(LoggerFactory.Create(builder => builder.AddConsole())).LifestyleSingleton());
+            container.Register(Component.For<ILoggerFactory>()
+                .Instance(LoggerFactory.Create(builder => builder.AddConsole()))
+                .LifestyleSingleton());
 
             container.Register(Component.For<IFeatureManager>().UsingFactoryMethod(kernel => new FeatureManager(
                 kernel.Resolve<IFeatureDefinitionProvider>(),
@@ -264,13 +284,19 @@ namespace DIContainers
                 Logger = kernel.Resolve<ILoggerFactory>().CreateLogger<FeatureManager>()
             }));
 
-            container.Register(Component.For<IOptions<TargetingEvaluationOptions>>().Instance(Options.Create(new TargetingEvaluationOptions())).LifestyleSingleton());
+            container.Register(Component.For<IOptions<TargetingEvaluationOptions>>()
+                .Instance(Options.Create(new TargetingEvaluationOptions()))
+                .LifestyleSingleton());
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
-            container.Register(Component.For<ITargetingContextAccessor>().Instance(targetingContextAccessor).LifestyleSingleton());
+            container.Register(Component.For<ITargetingContextAccessor>()
+                .Instance(targetingContextAccessor)
+                .LifestyleSingleton());
 
-            container.Register(Component.For<IFeatureFilterMetadata>().ImplementedBy<TargetingFilter>().LifestyleSingleton());
+            container.Register(Component.For<IFeatureFilterMetadata>()
+                .ImplementedBy<TargetingFilter>()
+                .LifestyleSingleton());
 
             IFeatureManager featureManager = container.Resolve<IFeatureManager>();
 
@@ -295,6 +321,8 @@ namespace DIContainers
 
         public static async void UseFeatureManagementWithSimpleInjector()
         {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with SimpleInjector ==========");
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var container = new Container();
@@ -346,17 +374,27 @@ namespace DIContainers
 
         public static async void UseFeatureManagementWithNinject()
         {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with Ninject ==========");
+
             IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             var kernel = new StandardKernel();
 
-            kernel.Bind<IConfiguration>().ToConstant(config).InSingletonScope();
+            kernel.Bind<IConfiguration>()
+                .ToConstant(config)
+                .InSingletonScope();
 
-            kernel.Bind<IFeatureDefinitionProvider>().To<ConfigurationFeatureDefinitionProvider>().InSingletonScope();
+            kernel.Bind<IFeatureDefinitionProvider>()
+                .To<ConfigurationFeatureDefinitionProvider>()
+                .InSingletonScope();
 
-            kernel.Bind<FeatureManagementOptions>().ToConstant(new FeatureManagementOptions()).InSingletonScope();
+            kernel.Bind<FeatureManagementOptions>()
+                .ToConstant(new FeatureManagementOptions())
+                .InSingletonScope();
 
-            kernel.Bind<ILoggerFactory>().ToConstant(LoggerFactory.Create(builder => builder.AddConsole())).InSingletonScope();
+            kernel.Bind<ILoggerFactory>()
+                .ToConstant(LoggerFactory.Create(builder => builder.AddConsole()))
+                .InSingletonScope();
 
             kernel.Bind<IFeatureManager>().ToMethod(c => new FeatureManager(
                 c.Kernel.Get<IFeatureDefinitionProvider>(),
@@ -366,13 +404,19 @@ namespace DIContainers
                 Logger = c.Kernel.Get<ILoggerFactory>().CreateLogger<FeatureManager>()
             }).InSingletonScope();
 
-            kernel.Bind<IOptions<TargetingEvaluationOptions>>().ToConstant(Options.Create(new TargetingEvaluationOptions())).InSingletonScope();
+            kernel.Bind<IOptions<TargetingEvaluationOptions>>()
+                .ToConstant(Options.Create(new TargetingEvaluationOptions()))
+                .InSingletonScope();
 
             var targetingContextAccessor = new OnDemandTargetingContextAccessor();
 
-            kernel.Bind<ITargetingContextAccessor>().ToConstant(targetingContextAccessor).InSingletonScope();
+            kernel.Bind<ITargetingContextAccessor>()
+                .ToConstant(targetingContextAccessor)
+                .InSingletonScope();
 
-            kernel.Bind<IFeatureFilterMetadata>().To<TargetingFilter>().InSingletonScope();
+            kernel.Bind<IFeatureFilterMetadata>()
+                .To<TargetingFilter>()
+                .InSingletonScope();
 
             IFeatureManager featureManager = kernel.Get<IFeatureManager>();
 

@@ -4,23 +4,23 @@
     {
         static void Main()
         {
-            Demo.ResolveMultipleImplementationsMEDI();
+            Demo.ResolveMultipleImplementationsWithMEDI();
 
-            Demo.InjectPropertyMEDI();
+            Demo.InjectPropertyWithMEDI();
 
-            Demo.ResolveMultipleImplementationsAutofac();
+            Demo.ResolveMultipleImplementationsWithAutofac();
 
-            Demo.InjectPropertyAutofac();
+            Demo.InjectPropertyWithAutofac();
 
-            //Demo.UseFeatureManagementWithAutofac();
+            Demo.UseFeatureManagementWithAutofac();
 
-            //Demo.UseFeatureManagementWithUnity();
+            Demo.UseFeatureManagementWithUnity();
 
-            //Demo.UseFeatureManagementWithCastleWindsor();
+            Demo.UseFeatureManagementWithCastleWindsor();
 
-            //Demo.UseFeatureManagementWithSimpleInjector();
+            Demo.UseFeatureManagementWithSimpleInjector();
 
-            //Demo.UseFeatureManagementWithNinject();
+            Demo.UseFeatureManagementWithNinject();
         }
     }
 }
