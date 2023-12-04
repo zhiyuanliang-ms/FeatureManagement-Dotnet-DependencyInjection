@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Castle.Windsor;
 using Castle.MicroKernel.Registration;
 using Microsoft.Extensions.Configuration;
@@ -175,6 +176,48 @@ namespace DIContainers
             builder.RegisterType<TargetingFilter>()
                 .As<IFeatureFilterMetadata>()
                 .SingleInstance();
+
+            var container = builder.Build();
+
+            IFeatureManager featureManager = container.Resolve<IFeatureManager>();
+
+            var users = new List<string>()
+            {
+                "Jeff",
+                "Sam"
+            };
+
+            const string feature = "Beta";
+
+            foreach (var user in users)
+            {
+                targetingContextAccessor.Current = new TargetingContext
+                {
+                    UserId = user
+                };
+
+                Console.WriteLine($"{feature} is {(await featureManager.IsEnabledAsync(feature) ? "enabled" : "disabled")} for {user}.");
+            }
+        }
+
+        public static async void UseFeatureManagementWithAutofacPopulate()
+        {
+            Console.WriteLine("========== Demo: Use Microsoft.FeatureManagement with Autofac ==========");
+
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+
+            IServiceCollection services = new ServiceCollection();
+
+            var targetingContextAccessor = new OnDemandTargetingContextAccessor();
+
+            services.AddSingleton(config)
+                .AddSingleton<ITargetingContextAccessor>(targetingContextAccessor)
+                .AddFeatureManagement()
+                .AddFeatureFilter<TargetingFilter>();
+
+            var builder = new ContainerBuilder();
+
+            builder.Populate(services);
 
             var container = builder.Build();
 
